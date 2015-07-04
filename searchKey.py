@@ -2,8 +2,8 @@
 from commonlib import myhttp
 from commonlib import constant
 from commonlib import Tea
+from mythread import  myThread
 import  re,wx,urllib2
-import mythread.myThread as myThread
 import thread
 import main,time
 import commonlib.carddatabase as carddatabase
@@ -61,9 +61,12 @@ class MyLogin(wx.Frame):
         self.Center()
         self.Show(True)
     def OnKillFocus(self,e):
-        constant.USERNAME = int(self.tidInput.GetValue())
-        thread = myThread.GetCodePicThread(self,self.myHttpRequest,constant.USERNAME)
-        thread.start()
+        try:
+            constant.USERNAME = int(self.tidInput.GetValue())
+        except ValueError:
+            pass;
+        getCodethread = myThread.GetCodePicThread(self,self.myHttpRequest,constant.USERNAME)
+        getCodethread.start()
         
     def OnSetFocus(self,e):
         pass
@@ -194,7 +197,7 @@ class MyLogin(wx.Frame):
         return base_url
                 
 app = wx.App(False)
-frame = MyLogin(None, u"qq登陆器")
+frame = MyLogin(None, u"qq魔卡卡片搜索")
 app.MainLoop()
 
 

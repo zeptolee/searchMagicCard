@@ -18,15 +18,17 @@ class Main(wx.Frame):
         self.cardLabel = wx.StaticText(self,-1,u'卡片')
         self.collectThemeChoice = wx.Choice(self,-1,(50,400),wx.DefaultSize,self.getCollectTheme())
         self.searchBt = wx.Button(self,-1,u'搜索')
+        self.searchStop = wx.Button(self,-1,u'停止')
         self.searchBt.Bind(wx.EVT_BUTTON, self.searchTheme)
+        self.searchStop.Bind(wx.EVT_BUTTON, self.stopSearchTheme)
         self.sloveOperateSizer.Add(self.cardLabel,0,wx.ALL,5)
         self.sloveOperateSizer.Add(self.collectThemeChoice,0,wx.ALL,5)
         self.sloveOperateSizer.Add(self.searchBt,0,wx.ALL,5)
+        self.sloveOperateSizer.Add(self.searchStop,0,wx.ALL,5)
 
+        self.msgLog = wx.TextCtrl(self,-1,size=(900,200),style=wx.TE_MULTILINE)
 
-        self.msgLog = wx.TextCtrl(self,-1,size=(900,200))
-
-
+        self.searchStop.Enable(False)
 
         #---------------总的布局----------
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -40,23 +42,36 @@ class Main(wx.Frame):
 
 
 
+
+    '''搜索主题
+    '''
     def searchTheme(self,e):
 
-        searchThread = searchCardThread.SearchCardThread(self,self.myHttpRequest,
+        self.searchThread = searchCardThread.SearchCardThread(self,self.myHttpRequest,
                                                          int(self.themeIdList[self.collectThemeChoice.GetSelection()]))
-        searchThread.start()
+        self.searchThread.start()
+        self.searchStop.Enable(True)
+        self.searchBt.Enable(False)
         
 
+    '''停止搜索
+    '''
+    def stopSearchTheme(self,e):
+        self.searchThread.stop()
+        self.searchStop.Enable(False)
+        self.searchBt.Enable(True)
 
+    '''更新操作日志
+    '''
     def updateLog(self,msg):
-        self.msgLog.AppendText(msg)
+        self.msgLog.AppendText(msg+'\n')
 
     '''
     获取要收集的主题
     '''
     def getCollectTheme(self):
         themeName = []
-        self.database.cu.execute("select * from cardtheme")
+        self.database.cu.execute("select * from cardtheme order by diff ASC ")
         result = self.database.cu.fetchall()
         for themeItem in result:
             themeName.append('['+str(themeItem[3])+u"星]"+themeItem[2])

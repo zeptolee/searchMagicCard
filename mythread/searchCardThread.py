@@ -16,19 +16,21 @@ class SearchCardThread(threading.Thread):
     def run(self):
         self.window.database.cu.execute("select * from cardtheme where type=?",(0,))
         result =self.window.database.cu.fetchall()
+
         for themeItem in result:
             base_url = commons.getUrl(constant.THEMELISTURL,self.myHttpRequest)
             postData = {
                    'uin':constant.USERNAME,
                    'tid':int(themeItem[1])
             }
+            wx.CallAfter(self.window.updateLog,u'正在搜索'+themeItem[2]+u'套卡')
             try:
                 result = self.myHttpRequest.get_response(base_url,postData).read()
-                #print result
                 soup = BeautifulSoup(result)
-                userList = []
+
                 nodeList = soup.find_all('node')
                 for nodeItem in nodeList:
+                    userList = []
                     soup = BeautifulSoup(str(nodeItem))
                     uinlist = soup.node['uin']
                     uinList = uinlist.split('|')
@@ -50,12 +52,13 @@ class SearchCardThread(threading.Thread):
                             pid = int(soup3.card['id'])
                             if self.window.database.getCardThemeid(pid)==self.cardtheme:
                                 wx.CallAfter(self.window.updateLog,user)
-                                file = open('1.txt','a')
-                                file.write(str(user)+'\n')
-                                file.close()
+                                myfile = open('1.txt','a')
+                                myfile.write('QQ'+str(user)+'\n')
+                                myfile.close()
                                 break
-
-                        time.sleep(0.5)
+                        if self.thread_stop:
+                            return
+                        time.sleep(0.3)
             except Exception:
                 continue
         

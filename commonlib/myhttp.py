@@ -19,7 +19,6 @@ class MyHttpRequest(object):
         else:
             req = urllib2.Request(url)
         if customCookies!=None:
-            
             req.add_header("Cookie", customCookies)
         response = self.opener.open(req)
         return response
