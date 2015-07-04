@@ -8,6 +8,7 @@ import commonlib.constant as constant
 from bs4 import  BeautifulSoup
 
 
+
 class CardDataBase(object):
     def __init__(self,path):
         
@@ -43,13 +44,15 @@ class CardDataBase(object):
         else:
             self.cx = sqlite3.connect(path+constant.DATABASE,check_same_thread = False)
             self.cu= self.cx.cursor()
+            print 'im run'
         
     #返回卡的id值
     def getCardId(self,cardName):
+
         self.cu.execute("select pid from cardinfo where name=?",(cardName,))
         result = self.cu.fetchone()
+
         return result[0]
-    
     #返回卡的名字
     def getCardInfo(self,cardId):
         cardInfo = []
@@ -60,16 +63,13 @@ class CardDataBase(object):
         cardInfo.append(self.cu.fetchone()[0])
         cardInfo.append(str(result[1]))
         return cardInfo
-    
+
     #返回卡的id值
     def getCardThemeid(self,cardId):
         self.cu.execute("select themeid from cardinfo where pid=?",(int(cardId),))
-        
         result = self.cu.fetchone()
         try:
             return result[0]
         except Exception:
-            return 0
 
-        
-        
+            return 0

@@ -26,7 +26,7 @@ class MyLogin(wx.Frame):
 
         #-------------用户信息----------
         self.userInfoSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.tidLabel = wx.StaticText(self,-1,u'用户名')#-1的意义为id由系统分配
+        self.tidLabel = wx.StaticText(self,-1,u'QQ账')#-1的意义为id由系统分配
         self.tidInput = wx.TextCtrl(self,-1)
         self.tidInput.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
         self.tidInput.Bind(wx.EVT_SET_FOCUS,self.OnSetFocus)
@@ -130,7 +130,7 @@ class MyLogin(wx.Frame):
                 dlg.Destroy()
         else:
             self.Destroy()
-            main.Main(None,u'魔法卡片',self.myHttpRequest,self.database)
+            main.Main(None,u'魔法卡片',self.myHttpRequest,self.database,self.cur_file_dir())
         
         
     #登陆魔卡
