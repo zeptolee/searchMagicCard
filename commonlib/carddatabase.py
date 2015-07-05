@@ -39,12 +39,10 @@ class CardDataBase(object):
             for item in giftlist:
                 soup = BeautifulSoup(str(item))
                 self.cu.execute("insert into gift(id,pid,showId,name)  values (NULL,'"+str(soup.gift['id'])+"','"+str(soup.gift['showid'])+"','"+soup.gift['name']+"')")
-            print 'ok'
             self.cx.commit()
         else:
             self.cx = sqlite3.connect(path+constant.DATABASE,check_same_thread = False)
             self.cu= self.cx.cursor()
-            print 'im run'
         
     #返回卡的id值
     def getCardId(self,cardName):
@@ -73,3 +71,11 @@ class CardDataBase(object):
         except Exception:
 
             return 0
+
+    '''获取卡片的主题名字
+    '''
+
+    def getCardThemeName(self, themeId):
+        self.cu.execute("SELECT name FROM cardtheme WHERE pid=?", (int(themeId),))
+        result = self.cu.fetchone()
+        return result[0]

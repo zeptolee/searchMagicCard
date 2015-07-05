@@ -6,6 +6,9 @@ from bs4 import BeautifulSoup
 import time
 import wx
 import commonlib.carddatabase as carddatabase
+import random
+import logging
+import traceback
 
 
 class MyThread(threading.Thread):
@@ -18,6 +21,7 @@ class MyThread(threading.Thread):
         self.nodeItem = nodeItem
         self.thread_stop = False
         self.database = carddatabase.CardDataBase(self.window.path)
+        logging.basicConfig(filename='error.log')
     def run(self):
         userList = []
         soup = BeautifulSoup(str(self.nodeItem))
@@ -26,39 +30,64 @@ class MyThread(threading.Thread):
         for uin in uinList:
             userList.append(uin)
         for user in userList:
-            print 'search user',user
-            if user=='':
-                continue
-            base_url = commons.getUrl(constant.CARDLOGINURL,self.myHttpRequest)
-            postData = {
-               'uin':constant.USERNAME,
-               'opuin':user,
-            }
-            result = self.myHttpRequest.get_response(base_url,postData).read()
-            soup = BeautifulSoup(result)
-            soup2 = BeautifulSoup(str(soup.changebox))
-            cardlist = soup2.find_all('card')
-            for item in cardlist:
-                soup3 = BeautifulSoup(str(item))
-                pid = int(soup3.card['id'])
-                cardThemeId = self.database.getCardThemeid(pid)
+            try:
+                print 'search user',user
+                if user=='':
+                    continue
+                base_url = commons.getUrl(constant.CARDLOGINURL,self.myHttpRequest)
+                postData = {
+                   'uin':constant.USERNAME,
+                   'opuin':user,
+                }
+                result = self.myHttpRequest.get_response(base_url,postData).read()
+                soup = BeautifulSoup(result)
 
-                if cardThemeId==self.cardtheme:
-                    print 'cardPrice',self.cardPrice
-                    if self.cardPrice==u'全部':
-                        print u'你搜索的是全部'
-                        wx.CallAfter(self.window.updateLog,user)
-                    else:
-                        if self.database.getCardInfo(pid)[2]==self.cardPrice:
-                            wx.CallAfter(self.window.updateLog,user)
-                    # myfile = open('1.txt','a')
-                    # myfile.write('QQ'+str(user)+'\n')
-                    # myfile.close()
-                    break
-            if self.thread_stop:
-                return
-            time.sleep(0.3)
+                soup2 = BeautifulSoup(str(soup.changebox))
 
+
+                collectThemelist = soup2.changebox['exch'].split(',')
+                #print collectThemelist
+                cardlist = soup2.find_all('card')
+                for item in cardlist:
+                    soup3 = BeautifulSoup(str(item))
+                    pid = int(soup3.card['id'])
+                    cardThemeId = self.database.getCardThemeid(pid)
+
+                    if cardThemeId==self.cardtheme:
+                        print 'cardPrice',self.cardPrice
+                        if self.cardPrice==u'全部':
+                            exchStr = u'对方设置的交换主题:'
+                            hasSetExch = False
+                            for collectTheme in collectThemelist:
+                                if int(collectTheme)!=0:
+                                    hasSetExch = True
+                                    exchStr +=self.database.getCardThemeName(int(collectTheme))+','
+                            if not hasSetExch:
+                                exchStr = u'对方设置的交换主题:无'
+                            msg = user+','+exchStr
+                            wx.CallAfter(self.window.updateLog,msg)
+                        else:
+                            if self.database.getCardInfo(pid)[2]==self.cardPrice:
+                                exchStr = u'对方设置的交换主题:'
+                                hasSetExch = False
+                                for collectTheme in collectThemelist:
+                                    if int(collectTheme)!=0:
+                                        hasSetExch = True
+                                        exchStr +=self.database.getCardThemeName(int(collectTheme))+','
+                                if not hasSetExch:
+                                    exchStr = u'对方设置的交换主题:无'
+                                msg = user+','+exchStr
+                                wx.CallAfter(self.window.updateLog,msg)
+                        # myfile = open('1.txt','a')
+                        # myfile.write('QQ'+str(user)+'\n')
+                        # myfile.close()
+                        break
+                if self.thread_stop:
+                    return
+                time.sleep(0.3)
+            except:
+                s = traceback.format_exc()
+                logging.error(s)
     def stop(self):
         self.thread_stop = True
 
@@ -79,8 +108,11 @@ class SearchCardThread(threading.Thread):
     def run(self):
         self.window.database.cu.execute("select * from cardtheme where type=?",(0,))
         result =self.window.database.cu.fetchall()
-
-        for themeItem in result:
+        logging.basicConfig(filename='error.log')
+        for i in range(len(result)):
+            print type(result)
+            themeItem = random.choice(result)
+            result.remove(themeItem)
             if self.thread_stop:
                 return
             base_url = commons.getUrl(constant.THEMELISTURL,self.myHttpRequest)
@@ -90,21 +122,27 @@ class SearchCardThread(threading.Thread):
             }
             wx.CallAfter(self.window.updateLog,u'正在搜索'+themeItem[2]+u'套卡')
             try:
-                result = self.myHttpRequest.get_response(base_url,postData).read()
-                soup = BeautifulSoup(result)
+                searchCardUserNum = 0;
+                while searchCardUserNum<=constant.CARDUSERNUM:
+                    if self.thread_stop:
+                        break
+                    results = self.myHttpRequest.get_response(base_url,postData).read()
+                    soup = BeautifulSoup(results)
+                    nodeList = soup.find_all('node')
+                    #print u'线程个数',len(nodeList)
+                    searchCardUserNum +=10*len(nodeList)
+                    #wx.CallAfter(self.window.updateLog,u'共有'+str(10*len(nodeList))+u'卡友')
+                    for i in range(len(nodeList)):
 
-                nodeList = soup.find_all('node')
-                print u'线程个数',len(nodeList)
-                for i in range(len(nodeList)):
+                        mythread = MyThread(self.window,self.myHttpRequest,self.cardtheme,self.cardPrice,nodeList[i])
+                        mythread.start()
+                        self.threadList.append(mythread)
 
-                    mythread = MyThread(self.window,self.myHttpRequest,self.cardtheme,self.cardPrice,nodeList[i])
-                    mythread.start()
-                    self.threadList.append(mythread)
-
-                for mythread in self.threadList:
-                    mythread.join()
-            except Exception:
-                print 'error'
+                    for mythread in self.threadList:
+                        mythread.join()
+            except :
+                s = traceback.format_exc()
+                logging.error(s)
                 continue
         
     def stop(self):

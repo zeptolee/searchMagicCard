@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import wx
 from mythread import searchCardThread
+from commonlib import constant
 
            
 class Main(wx.Frame):
@@ -47,7 +48,9 @@ class Main(wx.Frame):
         self.Center()
         self.Show(True)
 
-
+        configFile = open('config.ini','r')
+        constant.CARDUSERNUM = int(configFile.readline().split('=')[1])
+        configFile.close()
 
 
 
