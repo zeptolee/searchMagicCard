@@ -12,13 +12,14 @@ import traceback
 
 
 class MyThread(threading.Thread):
-    def __init__(self,window,myHttpRequest,cardtheme,cardPrice,nodeItem):
+    def __init__(self,window,myHttpRequest,cardtheme,cardPrice,nodeItem,searchCardId):
         threading.Thread.__init__(self,)
         self.window = window
         self.myHttpRequest =myHttpRequest
         self.cardtheme = cardtheme
         self.cardPrice = cardPrice
         self.nodeItem = nodeItem
+        self.searchCardId = searchCardId
         self.thread_stop = False
         self.database = carddatabase.CardDataBase(self.window.path)
         logging.basicConfig(filename='error.log')
@@ -67,7 +68,7 @@ class MyThread(threading.Thread):
                             msg = user+','+exchStr
                             wx.CallAfter(self.window.updateLog,msg)
                         else:
-                            if self.database.getCardInfo(pid)[2]==self.cardPrice:
+                            if self.database.getCardInfo(pid)[2]==self.cardPrice and (self.searchCardId==-1 or pid==self.searchCardId) :
                                 exchStr = u'对方设置的交换主题:'
                                 hasSetExch = False
                                 for collectTheme in collectThemelist:
@@ -82,12 +83,14 @@ class MyThread(threading.Thread):
                         # myfile.write('QQ'+str(user)+'\n')
                         # myfile.close()
                         break
+                cardlist = []
                 if self.thread_stop:
                     return
                 time.sleep(0.3)
             except:
                 s = traceback.format_exc()
                 logging.error(s)
+        userList = []
     def stop(self):
         self.thread_stop = True
 
@@ -96,12 +99,16 @@ class MyThread(threading.Thread):
 
 
 class SearchCardThread(threading.Thread):
-    def __init__(self,window,myHttpRequest,cardtheme,cardPrice):
+    def __init__(self,window,myHttpRequest,cardtheme,cardPrice,cardDetail):
         threading.Thread.__init__(self,)  
         self.window = window
         self.myHttpRequest =myHttpRequest
         self.cardtheme = cardtheme
         self.cardPrice = cardPrice
+        if cardDetail!=-1:
+            self.searchCardId = self.window.database.getCardId(cardDetail)
+        else:
+            self.searchCardId = -1
         self.thread_stop = False
         self.threadList = []
    
@@ -134,7 +141,7 @@ class SearchCardThread(threading.Thread):
                     #wx.CallAfter(self.window.updateLog,u'共有'+str(10*len(nodeList))+u'卡友')
                     for i in range(len(nodeList)):
 
-                        mythread = MyThread(self.window,self.myHttpRequest,self.cardtheme,self.cardPrice,nodeList[i])
+                        mythread = MyThread(self.window,self.myHttpRequest,self.cardtheme,self.cardPrice,nodeList[i],self.searchCardId)
                         mythread.start()
                         self.threadList.append(mythread)
 

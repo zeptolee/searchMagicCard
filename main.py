@@ -18,11 +18,15 @@ class Main(wx.Frame):
         #-------------炉子操作----------
         sb  = wx.StaticBox(self,label = u'需要搜索的套卡')
         self.sloveOperateSizer = wx.StaticBoxSizer(sb,wx.HORIZONTAL)
-        self.cardLabel = wx.StaticText(self,-1,u'卡片')
+        self.cardLabel = wx.StaticText(self,-1,u'套卡')
         self.collectThemeChoice = wx.Choice(self,-1,(50,400),wx.DefaultSize,self.getCollectTheme())
         self.collectThemeChoice.Bind(wx.EVT_CHOICE,self.onCollectThemeChoice)
         self.cardPriceLabel = wx.StaticText(self,-1,u'面值')
         self.searchCardPriceChoice = wx.Choice(self,-1,(50,400),wx.DefaultSize,[])
+        self.searchCardPriceChoice.Bind(wx.EVT_CHOICE,self.onCardPriceChoice)
+        self.detailCardLabel = wx.StaticText(self,-1,u'卡片')
+        self.detailCardChoice = wx.Choice(self,-1,(50,400),wx.DefaultSize,[])
+        self.detailCardChoice.Enable(False)
         self.searchBt = wx.Button(self,-1,u'搜索')
         self.searchStop = wx.Button(self,-1,u'停止')
         self.searchBt.Bind(wx.EVT_BUTTON, self.searchTheme)
@@ -31,6 +35,8 @@ class Main(wx.Frame):
         self.sloveOperateSizer.Add(self.collectThemeChoice,0,wx.ALL,5)
         self.sloveOperateSizer.Add(self.cardPriceLabel,0,wx.ALL,5)
         self.sloveOperateSizer.Add(self.searchCardPriceChoice,0,wx.ALL,5)
+        self.sloveOperateSizer.Add(self.detailCardLabel,0,wx.ALL,5)
+        self.sloveOperateSizer.Add(self.detailCardChoice,0,wx.ALL,5)
         self.sloveOperateSizer.Add(self.searchBt,0,wx.ALL,5)
         self.sloveOperateSizer.Add(self.searchStop,0,wx.ALL,5)
 
@@ -69,16 +75,46 @@ class Main(wx.Frame):
         self.searchCardPriceChoice.SetItems(self.priceList)
         self.searchCardPriceChoice.SetSelection(0)
 
+    '''选择卡片价格事件
+    '''
+    def onCardPriceChoice(self,e):
+        if self.searchCardPriceChoice.GetSelection()!=0:
+            self.detailCardChoice.Enable(True)
+            self.database.cu.execute("select name from cardinfo where  themeid=? and price=?",
+                                 (int(self.themeIdList[self.collectThemeChoice.GetSelection()]),
+                                  int(self.searchCardPriceChoice.GetStringSelection())))
+            result =self.database.cu.fetchall()
+            cardNameList = []
+            cardNameList.append(u'全部')
+            for item in result:
+                cardName = item[0]
+                cardNameList.append(cardName)
+            self.detailCardChoice.SetItems(cardNameList)
+            self.detailCardChoice.SetSelection(0)
+        else:
+            self.detailCardChoice.Enable(False)
+
+
     '''搜索主题
     '''
     def searchTheme(self,e):
 
+        try:
+            cardDetail = self.detailCardChoice.GetStringSelection()
+            if cardDetail==u'全部':
+                cardDetail = -1
+        except:
+            cardDetail = -1
         self.searchThread = searchCardThread.SearchCardThread(self,self.myHttpRequest,
                                                          int(self.themeIdList[self.collectThemeChoice.GetSelection()]),
-                                                              self.searchCardPriceChoice.GetStringSelection())
+                                                              self.searchCardPriceChoice.GetStringSelection(),
+                                                              cardDetail)
         self.searchThread.start()
         self.searchStop.Enable(True)
         self.searchBt.Enable(False)
+        self.collectThemeChoice.Enable(False)
+        self.detailCardChoice.Enable(False)
+        self.searchCardPriceChoice.Enable(False)
         self.msgLog.SetValue("")
         
 
@@ -88,6 +124,9 @@ class Main(wx.Frame):
         self.searchThread.stop()
         self.searchStop.Enable(False)
         self.searchBt.Enable(True)
+        self.collectThemeChoice.Enable(True)
+        self.detailCardChoice.Enable(True)
+        self.searchCardPriceChoice.Enable(True)
 
     '''更新操作日志
     '''
