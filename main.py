@@ -101,7 +101,7 @@ class Main(wx.Frame):
 
         try:
             cardDetail = self.detailCardChoice.GetStringSelection()
-            if cardDetail==u'全部':
+            if cardDetail==u'全部' or cardDetail=='':
                 cardDetail = -1
         except:
             cardDetail = -1
