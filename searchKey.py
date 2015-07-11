@@ -29,7 +29,7 @@ class MyLogin(wx.Frame):
         self.tidLabel = wx.StaticText(self,-1,u'QQ')#-1的意义为id由系统分配
         self.tidInput = wx.TextCtrl(self,-1)
         self.tidInput.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
-        self.tidInput.Bind(wx.EVT_SET_FOCUS,self.OnSetFocus)
+        self.tidInput.Bind(wx.EVT_KEY_DOWN, self.OnChar)
         self.aidLabel = wx.StaticText(self,-1,u'密码')
         self.aidInput = wx.TextCtrl(self,-1,style=wx.TE_PASSWORD)
         self.codeImage=wx.StaticBitmap(self, -1,  pos=(30,50), size=(150,80))
@@ -40,7 +40,8 @@ class MyLogin(wx.Frame):
         self.codeImage.Show(False)
         self.loginButton = wx.Button(self,-1,u'登陆')
         self.Bind(wx.EVT_BUTTON, self.loginQQ, self.loginButton)
-        
+        self.tipLabel = wx.StaticText(self,-1,u'正在更新数据库，请稍后点击登陆')
+        self.tipLabel.SetForegroundColour((255,0,0))
         self.userInfoSizer.Add(self.tidLabel,0,wx.ALL,10)
         self.userInfoSizer.Add(self.tidInput,0,wx.ALL,10)
         self.userInfoSizer.Add(self.aidLabel,0,wx.ALL,10)
@@ -49,6 +50,7 @@ class MyLogin(wx.Frame):
         self.userInfoSizer.Add(self.codeLabel,0,wx.TOP,10)
         self.userInfoSizer.Add(self.codeInput,0,wx.ALL,10)
         self.userInfoSizer.Add(self.loginButton,0,wx.ALL,10)
+        self.userInfoSizer.Add(self.tipLabel,0,wx.ALL,10)
         
         #---------------总体布局----------
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -67,9 +69,20 @@ class MyLogin(wx.Frame):
             pass;
         getCodethread = myThread.GetCodePicThread(self,self.myHttpRequest,constant.USERNAME)
         getCodethread.start()
+        e.Skip()
         
     def OnSetFocus(self,e):
+        e.Skip()
         pass
+
+
+    '''键盘按下时
+    '''
+    def OnChar(self,e):
+        if e.GetKeyCode()==9:
+            self.aidInput.SetFocus()
+        e.Skip()
+
     
     
     
@@ -128,6 +141,8 @@ class MyLogin(wx.Frame):
             retCode = dlg.ShowModal()
             if retCode == wx.ID_OK:
                 dlg.Destroy()
+            getCodethread = myThread.GetCodePicThread(self,self.myHttpRequest,constant.USERNAME)
+            getCodethread.start()
         else:
             self.Destroy()
             main.Main(None,u'魔法卡片',self.myHttpRequest,self.database,self.cur_file_dir())
@@ -167,6 +182,7 @@ class MyLogin(wx.Frame):
                 os.rename('card_info_v3_temp.db', 'card_info_v3.db')
                 os.remove('test.db')
             else:
+                fileDB.close()
                 fileTemp.close()
                 os.remove('card_info_v3_temp.db')
         else:
@@ -174,6 +190,7 @@ class MyLogin(wx.Frame):
             dbFileTemp.write(response)
             dbFileTemp.close()
         self.database = carddatabase.CardDataBase(self.cur_file_dir())
+        self.tipLabel.SetLabelText(u'更新完成，请登陆')
 
 
     #获取脚本文件的当前路径

@@ -65,6 +65,7 @@ class MyThread(threading.Thread):
                                     exchStr +=self.database.getCardThemeName(int(collectTheme))+','
                             if not hasSetExch:
                                 exchStr = u'对方设置的交换主题:无'
+                            wx.CallAfter(self.window.updateCardFriend,user)
                             msg = user+','+exchStr
                             wx.CallAfter(self.window.updateLog,msg)
                         else:
@@ -78,6 +79,7 @@ class MyThread(threading.Thread):
                                 if not hasSetExch:
                                     exchStr = u'对方设置的交换主题:无'
                                 msg = user+','+exchStr
+                                wx.CallAfter(self.window.updateCardFriend,user)
                                 wx.CallAfter(self.window.updateLog,msg)
                         # myfile = open('1.txt','a')
                         # myfile.write('QQ'+str(user)+'\n')
@@ -127,7 +129,7 @@ class SearchCardThread(threading.Thread):
                    'uin':constant.USERNAME,
                    'tid':int(themeItem[1])
             }
-            wx.CallAfter(self.window.updateLog,u'正在搜索'+themeItem[2]+u'套卡')
+            wx.CallAfter(self.window.updateLog,u'搜索正在炼制'+themeItem[2]+u'套卡的卡友')
             try:
                 searchCardUserNum = 0;
                 while searchCardUserNum<=constant.CARDUSERNUM:
@@ -147,6 +149,7 @@ class SearchCardThread(threading.Thread):
 
                     for mythread in self.threadList:
                         mythread.join()
+                    mythread = []
             except :
                 s = traceback.format_exc()
                 logging.error(s)

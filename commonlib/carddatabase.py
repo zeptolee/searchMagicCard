@@ -43,6 +43,7 @@ class CardDataBase(object):
         else:
             self.cx = sqlite3.connect(path+constant.DATABASE,check_same_thread = False)
             self.cu= self.cx.cursor()
+
         
     #返回卡的id值
     def getCardId(self,cardName):

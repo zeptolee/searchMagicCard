@@ -15,6 +15,8 @@ class Main(wx.Frame):
         #主题列表
         self.themeIdList = []
         self.priceList = []
+        #搜索到的卡友列表
+        self.cardFriendList = []
         #-------------炉子操作----------
         sb  = wx.StaticBox(self,label = u'需要搜索的套卡')
         self.sloveOperateSizer = wx.StaticBoxSizer(sb,wx.HORIZONTAL)
@@ -44,20 +46,32 @@ class Main(wx.Frame):
 
         self.searchStop.Enable(False)
 
+
+        #---------------超链接-----------
+        self.cardFriendLinkSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.hyper = wx.HyperlinkCtrl(self,-1,u"卡友链接", pos=(100, 100),
+                                  url="http://appimg2.qq.com/card/index_v3.html#opuin=")
+        self.userIdChoice = wx.Choice(self,-1,(50,400),wx.DefaultSize,[])
+        self.userIdChoice.Bind(wx.EVT_CHOICE,self.onCardUserChoice)
+        self.cardFriendLinkSizer.Add(self.hyper,0,wx.ALL,5)
+        self.cardFriendLinkSizer.Add(self.userIdChoice,0,wx.ALL,5)
+
         #---------------总的布局----------
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.sloveOperateSizer, 0, wx.EXPAND)
+        self.sizer.Add(self.cardFriendLinkSizer, 0, wx.EXPAND)
         self.sizer.Add(self.msgLog, 1, wx.EXPAND)
 #         #Layout sizers
         self.SetSizer(self.sizer)
         self.SetAutoLayout(1)
         self.Center()
         self.Show(True)
-
-        configFile = open('config.ini','r')
-        constant.CARDUSERNUM = int(configFile.readline().split('=')[1])
-        configFile.close()
-
+        try:
+            configFile = open('config.ini','r')
+            constant.CARDUSERNUM = int(configFile.readline().split('=')[1])
+            configFile.close()
+        except IOError:
+            print 'file not exist'
 
 
     '''选择搜索套卡事件
@@ -98,7 +112,8 @@ class Main(wx.Frame):
     '''搜索主题
     '''
     def searchTheme(self,e):
-
+        self.selectNum = -1
+        self.cardFriendList=[]
         try:
             cardDetail = self.detailCardChoice.GetStringSelection()
             if cardDetail==u'全部' or cardDetail=='':
@@ -116,7 +131,7 @@ class Main(wx.Frame):
         self.detailCardChoice.Enable(False)
         self.searchCardPriceChoice.Enable(False)
         self.msgLog.SetValue("")
-        
+        e.Skip()
 
     '''停止搜索
     '''
@@ -144,4 +159,17 @@ class Main(wx.Frame):
             themeName.append('['+str(themeItem[3])+u"星]"+themeItem[2])
             self.themeIdList.append(themeItem[1])
         return themeName
-    
+
+    '''更新搜索到的卡友信息
+    '''
+    def updateCardFriend(self,user):
+
+        self.cardFriendList.append(user)
+        self.userIdChoice.SetItems(self.cardFriendList)
+        self.userIdChoice.SetSelection(self.selectNum)
+    '''卡友列表被选择时
+    '''
+    def onCardUserChoice(self,e):
+        self.selectNum = self.userIdChoice.GetSelection()
+        self.hyper.SetURL(r'http://appimg2.qq.com/card/index_v3.html#opuin='+str(self.cardFriendList[self.selectNum]))
+        e.Skip()
