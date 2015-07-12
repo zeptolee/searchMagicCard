@@ -173,22 +173,27 @@ class MyLogin(wx.Frame):
             dbFileTemp = open('card_info_v3_temp.db','w')
             dbFileTemp.write(response)
             dbFileTemp.close()
-            fileTemp = open('card_info_v3_temp.db','r')
-            fileDB  = open('card_info_v3.db','r')
-            if md5.new(fileTemp.read()).digest()!=md5.new(fileDB.read()).digest():
-                fileDB.close()
-                fileTemp.close()
+            print 'write file ok'
+            #fileTemp = open('card_info_v3_temp.db','r')
+            #fileDB  = open('card_info_v3.db','r')
+
+            if os.path.getsize('card_info_v3_temp.db')>=os.path.getsize('card_info_v3.db'):
                 os.remove('card_info_v3.db')
                 os.rename('card_info_v3_temp.db', 'card_info_v3.db')
-                os.remove('test.db')
+                try:
+                    os.remove('test.db')
+                except WindowsError:
+                    pass
             else:
-                fileDB.close()
-                fileTemp.close()
                 os.remove('card_info_v3_temp.db')
         else:
             dbFileTemp = open('card_info_v3.db','w')
             dbFileTemp.write(response)
             dbFileTemp.close()
+            if os.path.getsize('card_info_v3.db')<os.path.getsize('card_info_v3_bf.db'):
+                os.remove('card_info_v3.db')
+                os.rename('card_info_v3_bf.db', 'card_info_v3.db')
+            print 'write file ok'
         self.database = carddatabase.CardDataBase(self.cur_file_dir())
         self.tipLabel.SetLabelText(u'更新完成，请登陆')
 

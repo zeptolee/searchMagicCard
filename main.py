@@ -14,15 +14,22 @@ class Main(wx.Frame):
         self.path = path
         #主题列表
         self.themeIdList = []
+        self.themeNameList = []
+        self.seachThemeIndex = -1
         self.priceList = []
         #搜索到的卡友列表
         self.cardFriendList = []
+
+        self.ignoreEvtText = False
         #-------------炉子操作----------
         sb  = wx.StaticBox(self,label = u'需要搜索的套卡')
         self.sloveOperateSizer = wx.StaticBoxSizer(sb,wx.HORIZONTAL)
         self.cardLabel = wx.StaticText(self,-1,u'套卡')
-        self.collectThemeChoice = wx.Choice(self,-1,(50,400),wx.DefaultSize,self.getCollectTheme())
-        self.collectThemeChoice.Bind(wx.EVT_CHOICE,self.onCollectThemeChoice)
+        self.collectThemeChoice = wx.ComboBox(self,-1,pos=wx.DefaultPosition,size=wx.DefaultSize,choices=self.getCollectTheme(),style=wx.CB_DROPDOWN)
+        self.collectThemeChoice.Bind(wx.EVT_COMBOBOX ,self.onCollectThemeChoice)
+        self.collectThemeChoice.Bind(wx.EVT_TEXT_ENTER ,self.onCollectThemeSearch)
+        self.collectThemeChoice.Bind(wx.EVT_TEXT, self.EvtText)
+        self.collectThemeChoice.Bind(wx.EVT_CHAR, self.EvtChar)
         self.cardPriceLabel = wx.StaticText(self,-1,u'面值')
         self.searchCardPriceChoice = wx.Choice(self,-1,(50,400),wx.DefaultSize,[])
         self.searchCardPriceChoice.Bind(wx.EVT_CHOICE,self.onCardPriceChoice)
@@ -79,8 +86,9 @@ class Main(wx.Frame):
     def onCollectThemeChoice(self,e):
         self.priceList = []
         self.priceList.append(u'全部')
+        self.seachThemeIndex = self.collectThemeChoice.GetSelection()
         self.database.cu.execute("select price from cardinfo where  themeid=?",
-                                 (int(self.themeIdList[self.collectThemeChoice.GetSelection()]),))
+                                 (int(self.themeIdList[self.seachThemeIndex]),))
         result =self.database.cu.fetchall()
         for item in result:
             price = item[0]
@@ -88,6 +96,49 @@ class Main(wx.Frame):
                 self.priceList.append(str(price))
         self.searchCardPriceChoice.SetItems(self.priceList)
         self.searchCardPriceChoice.SetSelection(0)
+        self.ignoreEvtText = True
+        e.Skip()
+
+    def onCollectThemeSearch(self,e):
+        self.priceList = []
+        self.priceList.append(u'全部')
+        self.database.cu.execute("select price from cardinfo where  themeid=?",
+                                 (int(self.themeIdList[self.seachThemeIndex]),))
+        result =self.database.cu.fetchall()
+        for item in result:
+            price = item[0]
+            if not str(price) in self.priceList:
+                self.priceList.append(str(price))
+        self.searchCardPriceChoice.SetItems(self.priceList)
+        self.searchCardPriceChoice.SetSelection(0)
+        self.ignoreEvtText = True
+        e.Skip()
+
+    def EvtChar(self, event):
+        if event.GetKeyCode() == 8:
+            self.ignoreEvtText = True
+        event.Skip()
+
+
+    def EvtText(self, event):
+        if self.ignoreEvtText:
+            self.ignoreEvtText = False
+            return
+        currentText = event.GetString()
+        print currentText
+        found = False
+        for i,choice in enumerate(self.themeNameList) :
+            if choice.startswith(currentText):
+                self.ignoreEvtText = True
+                self.collectThemeChoice.SetValue(choice)
+                self.collectThemeChoice.SetInsertionPoint(len(currentText))
+                self.collectThemeChoice.SetMark(len(currentText), len(choice))
+                self.seachThemeIndex = i
+                found = True
+                break
+        if not found:
+            event.Skip()
+
 
     '''选择卡片价格事件
     '''
@@ -95,7 +146,7 @@ class Main(wx.Frame):
         if self.searchCardPriceChoice.GetSelection()!=0:
             self.detailCardChoice.Enable(True)
             self.database.cu.execute("select name from cardinfo where  themeid=? and price=?",
-                                 (int(self.themeIdList[self.collectThemeChoice.GetSelection()]),
+                                 (int(self.themeIdList[self.seachThemeIndex]),
                                   int(self.searchCardPriceChoice.GetStringSelection())))
             result =self.database.cu.fetchall()
             cardNameList = []
@@ -121,7 +172,7 @@ class Main(wx.Frame):
         except:
             cardDetail = -1
         self.searchThread = searchCardThread.SearchCardThread(self,self.myHttpRequest,
-                                                         int(self.themeIdList[self.collectThemeChoice.GetSelection()]),
+                                                         int(self.themeIdList[self.seachThemeIndex]),
                                                               self.searchCardPriceChoice.GetStringSelection(),
                                                               cardDetail)
         self.searchThread.start()
@@ -158,6 +209,7 @@ class Main(wx.Frame):
         for themeItem in result:
             themeName.append('['+str(themeItem[3])+u"星]"+themeItem[2])
             self.themeIdList.append(themeItem[1])
+            self.themeNameList.append(themeItem[2])
         return themeName
 
     '''更新搜索到的卡友信息
