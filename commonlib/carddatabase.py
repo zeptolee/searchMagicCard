@@ -11,8 +11,6 @@ from bs4 import  BeautifulSoup
 
 class CardDataBase(object):
     def __init__(self,path):
-        
-       
         if not os.path.exists(path+constant.DATABASE):
             self.cx = sqlite3.connect(path+constant.DATABASE,check_same_thread = False)
             self.cu= self.cx.cursor()
@@ -47,11 +45,11 @@ class CardDataBase(object):
         
     #返回卡的id值
     def getCardId(self,cardName):
-
         self.cu.execute("select pid from cardinfo where name=?",(cardName,))
         result = self.cu.fetchone()
-
         return result[0]
+
+
     #返回卡的名字
     def getCardInfo(self,cardId):
         cardInfo = []

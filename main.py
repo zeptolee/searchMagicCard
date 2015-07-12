@@ -2,6 +2,8 @@
 import wx
 from mythread import searchCardThread
 from commonlib import constant
+import datetime
+import xlwt
 
            
 class Main(wx.Frame):
@@ -18,8 +20,9 @@ class Main(wx.Frame):
         self.seachThemeIndex = -1
         self.priceList = []
         #搜索到的卡友列表
+        self.seachTime = ''
+        self.seachCardFriendNum = 0
         self.cardFriendList = []
-
         self.ignoreEvtText = False
         #-------------炉子操作----------
         sb  = wx.StaticBox(self,label = u'需要搜索的套卡')
@@ -99,6 +102,9 @@ class Main(wx.Frame):
         self.ignoreEvtText = True
         e.Skip()
 
+
+    '''使用输入搜索的方式
+    '''
     def onCollectThemeSearch(self,e):
         self.priceList = []
         self.priceList.append(u'全部')
@@ -114,12 +120,15 @@ class Main(wx.Frame):
         self.ignoreEvtText = True
         e.Skip()
 
+    '''comboBox键盘监听事件
+    '''
     def EvtChar(self, event):
         if event.GetKeyCode() == 8:
             self.ignoreEvtText = True
         event.Skip()
 
-
+    '''commbobox内容变化事件
+    '''
     def EvtText(self, event):
         if self.ignoreEvtText:
             self.ignoreEvtText = False
@@ -182,6 +191,14 @@ class Main(wx.Frame):
         self.detailCardChoice.Enable(False)
         self.searchCardPriceChoice.Enable(False)
         self.msgLog.SetValue("")
+        self.seachTime = datetime.datetime.strftime(datetime.datetime.now(), '%Y_%m_%d_%H_%M_%S')
+
+
+        #创建excel
+        self.wb = xlwt.Workbook()
+        self.ws = self.wb.add_sheet(u'卡友信息')
+        self.ws.write(0,0,u'QQ号')
+        self.ws.write(0,1,u'需交换的卡组')
         e.Skip()
 
     '''停止搜索
@@ -193,6 +210,12 @@ class Main(wx.Frame):
         self.collectThemeChoice.Enable(True)
         self.detailCardChoice.Enable(True)
         self.searchCardPriceChoice.Enable(True)
+
+    '''完成搜索
+    '''
+    def searchComplete(self):
+        #进行excel文件的保存
+        self.wb.save(self.seachTime+u'搜索套卡'+self.themeNameList[self.seachThemeIndex]+u'卡友.xls')
 
     '''更新操作日志
     '''
@@ -214,11 +237,14 @@ class Main(wx.Frame):
 
     '''更新搜索到的卡友信息
     '''
-    def updateCardFriend(self,user):
+    def updateCardFriend(self,user,exchangTheme):
 
         self.cardFriendList.append(user)
         self.userIdChoice.SetItems(self.cardFriendList)
         self.userIdChoice.SetSelection(self.selectNum)
+        self.seachCardFriendNum +=1
+        self.ws.write(self.seachCardFriendNum,0,user)
+        self.ws.write(self.seachCardFriendNum,1,exchangTheme)
     '''卡友列表被选择时
     '''
     def onCardUserChoice(self,e):

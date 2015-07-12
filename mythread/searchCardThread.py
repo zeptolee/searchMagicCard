@@ -9,6 +9,7 @@ import commonlib.carddatabase as carddatabase
 import random
 import logging
 import traceback
+import xlwt
 
 
 class MyThread(threading.Thread):
@@ -58,32 +59,35 @@ class MyThread(threading.Thread):
                         print 'cardPrice',self.cardPrice
                         if self.cardPrice==u'全部':
                             exchStr = u'对方设置的交换主题:'
+                            exchCardTheme = ''
                             hasSetExch = False
                             for collectTheme in collectThemelist:
                                 if int(collectTheme)!=0:
                                     hasSetExch = True
-                                    exchStr +=self.database.getCardThemeName(int(collectTheme))+','
+                                    exchCardTheme +=self.database.getCardThemeName(int(collectTheme))+','
+                            exchStr +=exchCardTheme
                             if not hasSetExch:
                                 exchStr = u'对方设置的交换主题:无'
-                            wx.CallAfter(self.window.updateCardFriend,user)
+                                exchCardTheme = u'无'
+                            wx.CallAfter(self.window.updateCardFriend,user,exchCardTheme)
                             msg = user+','+exchStr
                             wx.CallAfter(self.window.updateLog,msg)
                         else:
                             if self.database.getCardInfo(pid)[2]==self.cardPrice and (self.searchCardId==-1 or pid==self.searchCardId) :
                                 exchStr = u'对方设置的交换主题:'
+                                exchCardTheme = ''
                                 hasSetExch = False
                                 for collectTheme in collectThemelist:
                                     if int(collectTheme)!=0:
                                         hasSetExch = True
-                                        exchStr +=self.database.getCardThemeName(int(collectTheme))+','
+                                        exchCardTheme +=self.database.getCardThemeName(int(collectTheme))+','
+                                exchStr +=exchCardTheme
                                 if not hasSetExch:
                                     exchStr = u'对方设置的交换主题:无'
+                                    exchCardTheme = u'无'
                                 msg = user+','+exchStr
-                                wx.CallAfter(self.window.updateCardFriend,user)
+                                wx.CallAfter(self.window.updateCardFriend,user,exchCardTheme)
                                 wx.CallAfter(self.window.updateLog,msg)
-                        # myfile = open('1.txt','a')
-                        # myfile.write('QQ'+str(user)+'\n')
-                        # myfile.close()
                         break
                 cardlist = []
                 if self.thread_stop:
@@ -118,12 +122,14 @@ class SearchCardThread(threading.Thread):
         self.window.database.cu.execute("select * from cardtheme where type=?",(0,))
         result =self.window.database.cu.fetchall()
         logging.basicConfig(filename='error.log')
+        #创建搜索的excel表
+
         for i in range(len(result)):
             print type(result)
             themeItem = random.choice(result)
             result.remove(themeItem)
             if self.thread_stop:
-                return
+                break
             base_url = commons.getUrl(constant.THEMELISTURL,self.myHttpRequest)
             postData = {
                    'uin':constant.USERNAME,
@@ -154,10 +160,10 @@ class SearchCardThread(threading.Thread):
                 s = traceback.format_exc()
                 logging.error(s)
                 continue
-        
+        print 'stop'
+        wx.CallAfter(self.window.searchComplete)
     def stop(self):
         self.thread_stop = True
-        print 'press top'
         for mythread in self.threadList:
             mythread.thread_stop = True
 
